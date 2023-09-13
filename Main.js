@@ -179,7 +179,7 @@ function loadGame() {
       generateButtons();
 
       // Start the countdown timer for 10 seconds
-      startTimer(10);
+      startTimer(1000);
     })
     .catch((error) => {
       console.error(error);
