@@ -1,191 +1,162 @@
-// Initialize variables
-let roundTimer = 10; // Initial timer value in seconds
-let round = 1;
-let roundTheme;
+// Constants
+const ROUND_TIMER_DURATION = 10;
+let roundTimer = ROUND_TIMER_DURATION;
+let intervalId;
+let roundNumber = 1;
+let roundThemeId;
 let activeWords = [];
-let themes = []; // Store loaded themes data
+let selections = [];
+const NUMBER_OF_SELECTIONS_TO_MAKE = 2;
 
-// Function to load JSON data from "themes.json" and start the game
-function initializeGame() {
-  fetch("themes.json")
-    .then((response) => response.json())
-    .then((data) => {
-      themes = data.Themes;
+// Initialize the game
+async function initializeGame() {
+    try {
+        await setupRound(roundNumber);
+        startTimer();
+    } catch (error) {
+        console.error('Error initializing game:', error);
+    }
+}
 
-      // Check if themes are loaded correctly
-      if (!themes || themes.length === 0) {
-        console.error("No themes found in the JSON file.");
-        return;
-      }
+// Set up the round
+async function setupRound(roundNumber) {
+    try {
+        const { theme, words } = await fetchWords(roundNumber);
+        roundThemeId = theme;
 
-      startNewRound();
-    })
-    .catch((error) => console.error(error));
+        if (words.length <= NUMBER_OF_SELECTIONS_TO_MAKE) {
+            throw new Error('Insufficient words for selection');
+        }
+
+        activeWords = words;
+        displayWords();
+    } catch (error) {
+        console.error('Error setting up round:', error);
+    }
+}
+
+// Display words on the UI
+function displayWords() {
+    const wordListElem = document.getElementById("wordList");
+    wordListElem.innerHTML = "";
+    activeWords.forEach(word => {
+        const btn = createWordButton(word);
+        wordListElem.appendChild(btn);
+    });
+}
+
+// Create a word button
+function createWordButton(word) {
+    const btn = document.createElement("button");
+    btn.innerText = word;
+    btn.addEventListener("click", selectWord);
+    return btn;
+}
+
+// Handle word selection
+function selectWord(event) {
+    const button = event.target;
+    toggleSelection(button);
+    updateSelections(button);
+
+    if (areSelectionsComplete()) {
+        validateSelection();
+    } else if (areSelectionsExceeded()) {
+        showSelectionError();
+    }
+}
+
+function toggleSelection(button) {
+    button.classList.toggle("selected");
+}
+
+function updateSelections(button) {
+    const isSelected = button.classList.contains("selected");
+    if (isSelected) {
+        selections.push(button);
+    } else {
+        removeSelection(button);
+    }
+}
+
+function areSelectionsComplete() {
+    return selections.length === NUMBER_OF_SELECTIONS_TO_MAKE;
+}
+
+function areSelectionsExceeded() {
+    return selections.length > NUMBER_OF_SELECTIONS_TO_MAKE;
+}
+
+function showSelectionError() {
+    console.error('Too many selections');
+}
+
+// Remove a selection
+function removeSelection(button) {
+    const index = selections.indexOf(button);
+    if (index > -1) {
+        selections.splice(index, 1);
+    }
+}
+
+// Validate the selection
+async function validateSelection() {
+    try {
+        const wordsToValidate = selections.map(button => button.innerText);
+        const { isCorrect, theme } = await submitAnswer(roundThemeId, wordsToValidate);
+
+        if (isCorrect) {
+            selections.forEach(button => button.classList.add("correct"));
+            document.getElementById("theme").innerText = theme;
+            setTimeout(transitionToNextRound, 1000);
+        } else {
+            resetSelections();
+        }
+    } catch (error) {
+        console.error('Error validating selection:', error);
+    }
+}
+
+// Reset selections
+function resetSelections() {
+    selections.forEach(button => button.classList.remove("selected"));
+    selections = [];
+}
+
+// Transition to the next round
+function transitionToNextRound() {
+    // Logic for transitioning to the next round
+}
+
+// Start the timer
+function startTimer() {
+    document.getElementById("time").value = roundTimer;
+    intervalId = setInterval(updateTimer, 1000);
+}
+
+// Update the timer
+function updateTimer() {
+    roundTimer--;
+    document.getElementById("time").value = roundTimer;
+    if (roundTimer === 0) {
+        clearInterval(intervalId);
+        endGame();
+    }
+}
+
+// End the game
+function endGame() {
+    alert(`Game Over. The theme was ${roundThemeId}.`); // Update with actual theme name
 }
 
 // Start a new round
 function startNewRound() {
-  // Randomly select a theme
-  roundTheme = getRandomTheme();
-
-  // Create an empty array called "activeWords"
-  activeWords = [];
-
-  // Add 2 words from the "roundTheme" to "activeWords"
-  const roundThemeWords = roundTheme.Words;
-  activeWords.push(roundThemeWords[0], roundThemeWords[1]);
-
-  // Randomly select 4 additional themes
-  for (let i = 0; i < 4; i++) {
-    const randomTheme = getRandomTheme();
-    const randomWord = getRandomWordInTheme(randomTheme);
-    activeWords.push(randomWord);
-  }
-
-  // Display round and timer
-  updateRoundAndTimer();
-
-  // Create buttons for activeWords and display them in "wordList"
-  createWordButtons();
+    clearInterval(intervalId);
+    roundTimer = ROUND_TIMER_DURATION;
+    roundNumber++;
+    document.getElementById("round").value = roundNumber;
+    startTimer();
 }
 
-// Function to update the round and timer display
-function updateRoundAndTimer() {
-  document.getElementById("round").value = round;
-  document.getElementById("time").value = roundTimer;
-}
-
-// Function to create buttons for activeWords
-function createWordButtons() {
-  const wordListElement = document.getElementById("wordList");
-  wordListElement.innerHTML = ""; // Clear existing buttons
-
-  activeWords.forEach((word) => {
-    const button = document.createElement("button");
-    button.textContent = word;
-    button.addEventListener("click", handleWordClick);
-    wordListElement.appendChild(button);
-  });
-}
-
-// Handle word button clicks
-let selectionOne = null;
-let selectionTwo = null;
-
-function handleWordClick(event) {
-  const clickedButton = event.target;
-
-  if (!selectionOne) {
-    selectionOne = clickedButton;
-    selectionOne.classList.add("selected");
-  } else if (!selectionTwo) {
-    selectionTwo = clickedButton;
-    selectionTwo.classList.add("selected");
-
-    // Check if selections belong to the roundTheme
-    if (
-      activeWords.includes(selectionOne.textContent) &&
-      activeWords.includes(selectionTwo.textContent)
-    ) {
-      selectionOne.classList.add("correct");
-      selectionTwo.classList.add("correct");
-      setTimeout(transitionToNextRound, 1000);
-    } else {
-      setTimeout(() => {
-        selectionOne.classList.remove("selected");
-        selectionTwo.classList.remove("selected");
-        selectionOne = null;
-        selectionTwo = null;
-      }, 1000);
-    }
-  }
-}
-
-// Function to transition to the next round
-function transitionToNextRound() {
-  // Ensure roundTheme is defined
-  if (!roundTheme) {
-    console.error("Round theme is not defined.");
-    return;
-  }
-
-  // Select a new roundTheme from themes associated with activeWords
-  const themeOptions = [];
-  activeWords.forEach((word) => {
-    if (
-      word !== selectionOne.textContent &&
-      word !== selectionTwo.textContent
-    ) {
-      const themeOfWord = findThemeOfWord(word);
-      if (themeOfWord && themeOfWord !== roundTheme) {
-        themeOptions.push(themeOfWord);
-      }
-    }
-  });
-
-  if (themeOptions.length === 0) {
-    console.error("No suitable theme found.");
-    return;
-  }
-
-  roundTheme = themeOptions[Math.floor(Math.random() * themeOptions.length)];
-
-  // Randomly choose either selectionOne or selectionTwo
-  const selectionToReplace = Math.random() < 0.5 ? selectionOne : selectionTwo;
-
-  // Replace the selected word with a new word from the new roundTheme
-  const newWord = getRandomWordInTheme(roundTheme);
-  selectionToReplace.textContent = newWord;
-
-  // Reset the selected classes
-  selectionOne.classList.remove("selected", "correct");
-  selectionTwo.classList.remove("selected", "correct");
-  selectionOne = null;
-  selectionTwo = null;
-
-  // Start the next round
-  round++;
-  roundTimer = 10;
-  updateRoundAndTimer();
-}
-
-// Function to find the theme associated with a specific word
-function findThemeOfWord(wordToFind) {
-  for (const theme of themes) {
-    if (theme.Words.includes(wordToFind)) {
-      return theme;
-    }
-  }
-  return null; // Theme not found
-}
-
-// Function to get a random theme from themes
-function getRandomTheme() {
-  return themes[Math.floor(Math.random() * themes.length)];
-}
-
-// Function to get a random word from a theme
-function getRandomWordInTheme(theme) {
-  const words = theme.Words;
-  return words[Math.floor(Math.random() * words.length)];
-}
-
-// Handle game over
-function gameOver() {
-  alert(`Game Over. The theme was ${roundTheme.Theme}`);
-}
-
-// Start the game by loading themes
+// Initialize the game
 initializeGame();
-
-// Timer countdown (update every second)
-const timerInterval = setInterval(() => {
-  roundTimer--;
-
-  if (roundTimer <= 0) {
-    clearInterval(timerInterval);
-    gameOver();
-  } else {
-    document.getElementById("time").textContent = roundTimer;
-  }
-}, 1000);
