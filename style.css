@@ -82,6 +82,7 @@ html {
 body {
   max-width: 800px;
   margin: 0 auto;
+  padding: 0 1rem;
   background: url("img/bg-grid.png");
 }
 body::after {
@@ -140,15 +141,15 @@ body::after {
 }
 #wordList {
   display: grid;
-  grid-template-columns: 20rem 20rem 20rem;
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
-  justify-content: center;
 }
 
 #wordList button {
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: bold;
-  height: 5rem;
+  display: block;
+  padding: 1em;
   border-radius: 1rem;
   background: white;
   border: solid 2px #999;
@@ -176,4 +177,13 @@ body::after {
   font-size: 3rem;
   font-weight: 900;
   padding: 0.5em;
+}
+
+@media (min-width: 600px) {
+  #wordList {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  #wordList button {
+    font-size: 1.25rem;
+  }
 }
