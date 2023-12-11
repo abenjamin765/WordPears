@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Scoreboard from "./Scoreboard";
 import themes from "./Themes"; // Importing themes
 import "./App.css";
+import { getWords } from "./api/api-handler";
 
 const App = () => {
   const [words, setWords] = useState([]);
@@ -13,27 +14,86 @@ const App = () => {
   const [auxThemes, setAuxThemes] = useState([]);
 
   // Function to randomly select themes and initialize words
-  const initializeGame = () => {
-    const shuffledThemes = [...themes].sort(() => 0.5 - Math.random());
-    const selectedThemes = shuffledThemes.slice(0, 5);
+  const initializeGame = async () => {
+    /**
+     * Notes (MJ 11 Dec 23)
+     * 
+     * We want to be careful about setting the theme in the component's state
+     * A savvy player will be able to use the developer's tools to determine the theme this way
+     */
 
-    const chosenTurnTheme =
-      selectedThemes[Math.floor(Math.random() * selectedThemes.length)];
-    const chosenAuxThemes = selectedThemes.filter(
-      (theme) => theme !== chosenTurnTheme
-    );
+    // const shuffledThemes = [...themes].sort(() => 0.5 - Math.random());
+    // const selectedThemes = shuffledThemes.slice(0, 5);
 
-    setTurnTheme(chosenTurnTheme);
-    setAuxThemes(chosenAuxThemes);
+    // const chosenTurnTheme =
+    //   selectedThemes[Math.floor(Math.random() * selectedThemes.length)];
+    // const chosenAuxThemes = selectedThemes.filter(
+    //   (theme) => theme !== chosenTurnTheme
+    // );
 
-    const turnWords = chosenTurnTheme.words.slice(0, 2);
-    const auxWords = chosenAuxThemes.map(
-      (theme) => theme.words[Math.floor(Math.random() * theme.words.length)]
-    );
-    setWords(turnWords.concat(auxWords));
+    // setTurnTheme(chosenTurnTheme);
+    // setAuxThemes(chosenAuxThemes);
+
+    // const turnWords = chosenTurnTheme.words.slice(0, 2);
+    // const auxWords = chosenAuxThemes.map(
+    //   (theme) => theme.words[Math.floor(Math.random() * theme.words.length)]
+    // );
+    // setWords(turnWords.concat(auxWords));
+
+
+    /**
+     * Instead, retrieve a set of words from the backend
+     * A unique solution is guaranteed by this request
+     */
+    try {
+      const { success, data: words } = await getWords();
+      setWords(success ? words : []);
+    } catch (err) {
+      console.error('Error retrieving game', err);
+      setWords([]);
+    }
   };
 
   useEffect(() => {
+    async function initializeGame() {
+      /**
+       * Notes (MJ 11 Dec 23)
+       * 
+       * We want to be careful about setting the theme in the component's state
+       * A savvy player will be able to use the developer's tools to determine the theme this way
+       */
+
+      // const shuffledThemes = [...themes].sort(() => 0.5 - Math.random());
+      // const selectedThemes = shuffledThemes.slice(0, 5);
+
+      // const chosenTurnTheme =
+      //   selectedThemes[Math.floor(Math.random() * selectedThemes.length)];
+      // const chosenAuxThemes = selectedThemes.filter(
+      //   (theme) => theme !== chosenTurnTheme
+      // );
+
+      // setTurnTheme(chosenTurnTheme);
+      // setAuxThemes(chosenAuxThemes);
+
+      // const turnWords = chosenTurnTheme.words.slice(0, 2);
+      // const auxWords = chosenAuxThemes.map(
+      //   (theme) => theme.words[Math.floor(Math.random() * theme.words.length)]
+      // );
+      // setWords(turnWords.concat(auxWords));
+
+
+      /**
+       * Instead, retrieve a set of words from the backend
+       * A unique solution is guaranteed by this request
+       */
+      try {
+        const { success, data: words } = await getWords();
+        setWords(success ? words : []);
+      } catch (err) {
+        console.error('Error retrieving game', err);
+        setWords([]);
+      }
+    }
     initializeGame();
   }, []);
 
