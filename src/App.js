@@ -2,7 +2,11 @@ import React, { useState, useEffect } from "react";
 import Scoreboard from "./Scoreboard";
 import themes from "./Themes"; // Importing themes
 import "./App.css";
-import { getWords } from "./api/api-handler";
+import { checkWords, getWords } from "./api/api-handler";
+
+const roundWordsMap = {
+  "1": { solutionCt: 2, nonSolutionCt: 4 }
+}
 
 const App = () => {
   const [words, setWords] = useState([]);
@@ -14,87 +18,48 @@ const App = () => {
   const [auxThemes, setAuxThemes] = useState([]);
 
   // Function to randomly select themes and initialize words
-  const initializeGame = async () => {
-    /**
-     * Notes (MJ 11 Dec 23)
-     * 
-     * We want to be careful about setting the theme in the component's state
-     * A savvy player will be able to use the developer's tools to determine the theme this way
-     */
+  // const initializeGame = async () => {
+  //   /**
+  //    * Notes (MJ 11 Dec 23)
+  //    * 
+  //    * We want to be careful about setting the theme in the component's state
+  //    * A savvy player will be able to use the developer's tools to determine the theme this way
+  //    */
 
-    // const shuffledThemes = [...themes].sort(() => 0.5 - Math.random());
-    // const selectedThemes = shuffledThemes.slice(0, 5);
+  //   // const shuffledThemes = [...themes].sort(() => 0.5 - Math.random());
+  //   // const selectedThemes = shuffledThemes.slice(0, 5);
 
-    // const chosenTurnTheme =
-    //   selectedThemes[Math.floor(Math.random() * selectedThemes.length)];
-    // const chosenAuxThemes = selectedThemes.filter(
-    //   (theme) => theme !== chosenTurnTheme
-    // );
+  //   // const chosenTurnTheme =
+  //   //   selectedThemes[Math.floor(Math.random() * selectedThemes.length)];
+  //   // const chosenAuxThemes = selectedThemes.filter(
+  //   //   (theme) => theme !== chosenTurnTheme
+  //   // );
 
-    // setTurnTheme(chosenTurnTheme);
-    // setAuxThemes(chosenAuxThemes);
+  //   // setTurnTheme(chosenTurnTheme);
+  //   // setAuxThemes(chosenAuxThemes);
 
-    // const turnWords = chosenTurnTheme.words.slice(0, 2);
-    // const auxWords = chosenAuxThemes.map(
-    //   (theme) => theme.words[Math.floor(Math.random() * theme.words.length)]
-    // );
-    // setWords(turnWords.concat(auxWords));
+  //   // const turnWords = chosenTurnTheme.words.slice(0, 2);
+  //   // const auxWords = chosenAuxThemes.map(
+  //   //   (theme) => theme.words[Math.floor(Math.random() * theme.words.length)]
+  //   // );
+  //   // setWords(turnWords.concat(auxWords));
 
 
-    /**
-     * Instead, retrieve a set of words from the backend
-     * A unique solution is guaranteed by this request
-     */
-    try {
-      const { success, data: words } = await getWords();
-      setWords(success ? words : []);
-    } catch (err) {
-      console.error('Error retrieving game', err);
-      setWords([]);
-    }
-  };
+  //   /**
+  //    * Instead, retrieve a set of words from the backend
+  //    * A unique solution is guaranteed by this request
+  //    */
+  //   try {
+  //     const { success, data: words } = await getWords();
+  //     setWords(success ? words : []);
+  //   } catch (err) {
+  //     console.error('Error retrieving game', err);
+  //     setWords([]);
+  //   }
+  // };
 
   useEffect(() => {
-    async function initializeGame() {
-      /**
-       * Notes (MJ 11 Dec 23)
-       * 
-       * We want to be careful about setting the theme in the component's state
-       * A savvy player will be able to use the developer's tools to determine the theme this way
-       */
-
-      // const shuffledThemes = [...themes].sort(() => 0.5 - Math.random());
-      // const selectedThemes = shuffledThemes.slice(0, 5);
-
-      // const chosenTurnTheme =
-      //   selectedThemes[Math.floor(Math.random() * selectedThemes.length)];
-      // const chosenAuxThemes = selectedThemes.filter(
-      //   (theme) => theme !== chosenTurnTheme
-      // );
-
-      // setTurnTheme(chosenTurnTheme);
-      // setAuxThemes(chosenAuxThemes);
-
-      // const turnWords = chosenTurnTheme.words.slice(0, 2);
-      // const auxWords = chosenAuxThemes.map(
-      //   (theme) => theme.words[Math.floor(Math.random() * theme.words.length)]
-      // );
-      // setWords(turnWords.concat(auxWords));
-
-
-      /**
-       * Instead, retrieve a set of words from the backend
-       * A unique solution is guaranteed by this request
-       */
-      try {
-        const { success, data: words } = await getWords();
-        setWords(success ? words : []);
-      } catch (err) {
-        console.error('Error retrieving game', err);
-        setWords([]);
-      }
-    }
-    initializeGame();
+    setWordsAndTheme();
   }, []);
 
   // Countdown timer logic
@@ -109,69 +74,51 @@ const App = () => {
   }, [time, round]);
 
   // Check to see if the words belong to the same theme
-  const doWordsMatch = (word1, word2) => {
-    const word1Theme = themes.find((theme) => theme.words.includes(word1));
-    const word2Theme = themes.find((theme) => theme.words.includes(word2));
-    return word1Theme && word2Theme && word1Theme.theme === word2Theme.theme;
+  const doWordsMatch = async (words) => {
+    /**
+     * @TODO param should be from state, and should be an array of words
+     */
+    console.log('doWordsMatch selectedWords', selectedWords)
+    const { success, isCorrect } = await checkWords({theme: turnTheme, words: words});
+
+    // Handle { success: false }
+    if (!success) {
+      console.error('HANDLE THIS ERROR');
+    }
+
+    return isCorrect;
   };
 
-  const handleWordClick = (selectedWord) => {
+  const handleWordClick = async (selectedWord) => {
     const updatedSelection = selectedWords.includes(selectedWord)
       ? selectedWords.filter((word) => word !== selectedWord)
       : [...selectedWords, selectedWord];
     setSelectedWords(updatedSelection);
-
-    if (updatedSelection.length === 2) {
-      if (doWordsMatch(updatedSelection[0], updatedSelection[1])) {
+    const { solutionCt } = roundWordsMap[round];
+    if (updatedSelection.length === solutionCt) {
+      if (doWordsMatch(updatedSelection)) {
         setScore(score + 10);
-
-        let newWords = [...words]; // Copy current words
-
-        // Replace each matched word with a new word
-        updatedSelection.forEach((matchedWord) => {
-          const wordIndex = newWords.indexOf(matchedWord);
-          if (wordIndex !== -1) {
-            // Select a new word for replacement
-            let newWord;
-            let replacementTheme;
-
-            // If it's the first word, select from a new turnTheme
-            if (matchedWord === updatedSelection[0]) {
-              const remainingAuxThemes = auxThemes.filter(
-                (theme) => !newWords.includes(theme.words[0])
-              );
-              replacementTheme =
-                remainingAuxThemes[
-                  Math.floor(Math.random() * remainingAuxThemes.length)
-                ];
-              setTurnTheme(replacementTheme);
-            } else {
-              // For the second word, select from a new auxTheme
-              const potentialNewAuxThemes = themes.filter(
-                (theme) => theme !== turnTheme && !auxThemes.includes(theme)
-              );
-              replacementTheme =
-                potentialNewAuxThemes[
-                  Math.floor(Math.random() * potentialNewAuxThemes.length)
-                ];
-              setAuxThemes([...auxThemes, replacementTheme]); // Add new auxTheme
-            }
-
-            newWord = replacementTheme.words.find(
-              (word) => !newWords.includes(word)
-            );
-            newWords[wordIndex] = newWord; // Replace the matched word
-          }
-        });
         setRound(round + 1); // Increment round
         setTime(10); // Reset timer for the new round
-        setWords(newWords);
+        await setWordsAndTheme();
       } else {
         alert("Not a match, try again!");
       }
       setTimeout(() => setSelectedWords([]), 1000);
     }
   };
+
+  const setWordsAndTheme = async (round) => {
+    try {
+      const { success, data } = await getWords();
+      const { theme , words } = data;
+      setWords(success ? words : []);
+      setTurnTheme(success ? theme : '')
+    } catch (err) {
+      console.error('Error retrieving game', err);
+      setWords([]);
+    }
+  }
 
   return (
     <div className="App">
