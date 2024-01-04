@@ -75,10 +75,6 @@ const App = () => {
 
   // Check to see if the words belong to the same theme
   const doWordsMatch = async (words) => {
-    /**
-     * @TODO param should be from state, and should be an array of words
-     */
-    console.log('doWordsMatch selectedWords', selectedWords)
     const { success, isCorrect } = await checkWords({theme: turnTheme, words: words});
 
     // Handle { success: false }
@@ -94,9 +90,11 @@ const App = () => {
       ? selectedWords.filter((word) => word !== selectedWord)
       : [...selectedWords, selectedWord];
     setSelectedWords(updatedSelection);
-    const { solutionCt } = roundWordsMap[round];
+    // const { solutionCt } = roundWordsMap[round]; // The resolution of what we call a "round" needs to happen here.
+
+    const { solutionCt } = roundWordsMap[1];
     if (updatedSelection.length === solutionCt) {
-      if (doWordsMatch(updatedSelection)) {
+      if (await doWordsMatch(updatedSelection)) {
         setScore(score + 10);
         setRound(round + 1); // Increment round
         setTime(10); // Reset timer for the new round
