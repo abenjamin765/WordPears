@@ -1,0 +1,17 @@
+{
+  "files": {
+    "main.css": "/WordPears/static/css/main.dcf9bb97.css",
+    "main.js": "/WordPears/static/js/main.2d97c4ad.js",
+    "static/js/787.a32fd5fc.chunk.js": "/WordPears/static/js/787.a32fd5fc.chunk.js",
+    "static/media/bg-grid.png": "/WordPears/static/media/bg-grid.539b20aa79cf549522f5.png",
+    "static/media/wordpears-logo.svg": "/WordPears/static/media/wordpears-logo.3d6c68539281fde4884e.svg",
+    "index.html": "/WordPears/index.html",
+    "main.dcf9bb97.css.map": "/WordPears/static/css/main.dcf9bb97.css.map",
+    "main.2d97c4ad.js.map": "/WordPears/static/js/main.2d97c4ad.js.map",
+    "787.a32fd5fc.chunk.js.map": "/WordPears/static/js/787.a32fd5fc.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.dcf9bb97.css",
+    "static/js/main.2d97c4ad.js"
+  ]
+}
